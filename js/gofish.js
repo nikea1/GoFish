@@ -1,8 +1,8 @@
-var cardDeck = require("./playingcards.js");
-var Hand = require("./hand.js");
+// var cardDeck = require("./playingcards.js");
+// var Hand = require("./hand.js");
 
 //deal out starting hands
-function initHands(){
+function initHands(players, pool){
 
 	//deal out 7 cards for each player alternate
 	for(i = 0; i < players.length*7; i++){
@@ -31,24 +31,24 @@ function drawNewHand(player, num){
 		player.add(pool.dealOne())
 	}
 }
-//create Deck object
-var pool = new cardDeck();
+// //create Deck object
+// var pool = new cardDeck();
 
-//create player array
-var players = [];
+// //create player array
+// var players = [];
 
-//create players
-players.push(new Hand());
-players.push(new Hand());
+// //create players
+// players.push(new Hand());
+// players.push(new Hand());
 
-//initialize player turn
-var turn = Math.floor(Math.random()*players.length);
+// //initialize player turn
+// var turn = Math.floor(Math.random()*players.length);
 
-//shuffle deck
-pool.shuffle();
+// //shuffle deck
+// pool.shuffle();
 
-//deal out cards
-initHands();
+// //deal out cards
+// initHands();
 
 
 // $("#player2").html("<p>I'm Player 2</p>");

@@ -15,17 +15,17 @@ function Deck(){
   this.deck = [];
   
   this.initDeck = function(){
-    var suits = ["Heart", "Club", "Spade", "Diamond"];
-	var value = ["Ace", "2", "3", "4", "5", "6", "7", "8", "9", "10", "Jack", "Queen", "King"];
+    var suits = ["heart", "club", "spade", "diamond"];
+  	var value = ["ace", "2", "3", "4", "5", "6", "7", "8", "9", "10", "jack", "queen", "king"];
 
-	//for each suit
-	for(i = 0; i < 4; i++){
-	  //for each value
-	  for(j = 0; j < 13; j++){
-	  	//push card object in deck array
-	    this.deck.push(new Card(suits[i], value[j]));
-	  }
-	}//end of deck
+  	//for each suit
+  	for(i = 0; i < 4; i++){
+  	  //for each value
+  	  for(j = 0; j < 13; j++){
+  	  	//push card object in deck array
+  	    this.deck.push(new Card(suits[i], value[j]));
+  	  }
+  	}//end of deck
   }//end of initDeck
   
   //keeps track of number of cards in deck
@@ -54,4 +54,4 @@ function Deck(){
 
 }//end of Deck 
 
-module.exports = Deck;
+// module.exports = Deck;

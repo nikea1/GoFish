@@ -14,6 +14,20 @@
     <!-- Optional theme -->
     <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap-theme.min.css" integrity="sha384-rHyoN1iRsVXV4nD0JutlnGaslCJuC7uwjduW9SVrLvRYooPp2bWYgmgJQIXwl/Sp" crossorigin="anonymous">
 
+    <style>
+      .card{
+        width:10%;
+      }
+
+      #log{
+        width: 75%;
+        height: 175px;
+        border-style: inset;
+        border-width: 2px;
+        overflow: scroll;
+      }
+    </style>
+
     <!-- HTML5 shim and Respond.js for IE8 support of HTML5 elements and media queries -->
     <!-- WARNING: Respond.js doesn't work if you view the page via file:// -->
     <!--[if lt IE 9]>
@@ -27,8 +41,20 @@
     <div class="container">
 
       <div id="cardTable">
+        <!-- others -->
+        <h3>Player2</h3>
         <div id="player2"></div>
+
+        <div id="deck"><h3>Number of cards Left:<span id=cardsLeft></span></h3></div>
+        <!-- client -->
+        <h3>Player1</h3>
         <div id="player1"></div>
+        
+      </div>
+
+      <div id="display">
+        <h2>Game Log</h2>
+        <div id="log"></div>
       </div>
       
     </div>
@@ -41,6 +67,163 @@
     <!-- Include all compiled plugins (below), or include individual files as needed -->
     <!-- Latest compiled and minified JavaScript -->
     <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js" integrity="sha384-Tc5IQib027qvyjSMfHjOMaLkfuWVxZxUPnCJA7l2mCWNIpG9mGCD8wGNIcPD7Txa" crossorigin="anonymous"></script>
+    <script type="text/javascript" src="./js/playingcards.js"></script>
+    <script type="text/javascript" src="./js/hand.js"></script>
     <script type="text/javascript" src="./js/gofish.js"></script>
+    <script type="text/javascript">
+      var pool = new Deck();
+      pool.initDeck();
+      var players = [];
+
+      players.push(new Hand());
+      players.push(new Hand());
+      var askingCard = "";
+      var askingPlayer = "";
+      var turns = 0;
+      // var turns = Math.floor(Math.round()*players.length);
+
+      initHands(players, pool);
+
+      //if client num matches player use drawClientHand
+      //else use draw others hand
+
+      function drawClientsHand(){
+        $("#player1").empty();
+        //draw player 1 hands on screen
+        players[0].hand.forEach(function(card){
+        $("<img />").addClass("card").addClass("card1").data("cardkey", card).attr("src", "./cards/"+card.value+"_of_"+card.suit+"s.png").appendTo($("#player1"))
+        });
+      }
+
+      function drawOthersHand(playerId){
+        $(playerId).empty();
+        //display player two's hands
+        players[1].hand.forEach(function(){
+        $("<img />").addClass("card").addClass("card2").attr("src", "./cards/red_joker.png").appendTo($(playerId))
+        })
+      }
+
+      function runComputerPlayer(player){
+        var cardVal = Math.floor(Math.random()*player.cardsLeft());
+        var askingCard = player.hand[cardVal].value;
+        var askingPlayer = players[0]; //TODO: change this when more players introduced
+         //if both conditions are found.
+          while(askingCard && askingPlayer){
+            $("#log").prepend("<p>Player 2 fished Player 1 for "+ askingCard +"s.</p>")
+
+            //try to hook cards from player
+            var hook = fishing(askingPlayer, askingCard);
+            console.log("hook", hook);
+            //if cards are found add to hand
+            if(hook.length != 0){
+              $("#log").prepend("<p>Player 2 got "+hook.length +" "+ askingCard+"(s)!</p>")
+
+              //check for matches
+              
+              player.hand = player.hand.concat(hook);
+              //check if hand is empty
+              //draw new hand if so
+              //clear all cards
+              drawClientsHand();
+              drawOthersHand("#player2");
+             
+              //loop again
+            }
+            //else draw and end turn
+            else{
+              $("#log").prepend("<p>Player 2 go fish!</p>")
+
+              player.add(pool.dealOne());
+              $("#cardsLeft").text(pool.cardsLeft())
+              drawOthersHand("#player2");
+
+
+              turns = (turns++)%players.length;
+              askingPlayer = "";
+              askingCard = "";
+              break;
+              //check for matches
+              //check if hand is empty
+              //draw new hand if so
+              //break loop
+              //run computer player?
+            }//end of else
+            // askingPlayer = "";
+            cardVal = Math.floor(Math.random()*player.cardsLeft());
+            askingCard = player.hand[cardVal].value;
+          }//end of asking card and asking player
+      }
+
+      
+      drawClientsHand();
+      drawOthersHand("#player2");
+      //display number of cards left in deck
+      $("#cardsLeft").text(pool.cardsLeft());
+
+      console.log(players[0]);
+      console.log(players[1]);
+
+
+
+      //allows player to pick his cards
+      $(document.body).on("click", ".card1", function(){
+        if(turns == 0){
+          //get card value
+          var temp = $(this).data("cardkey");
+          console.log(temp);
+          askingCard = temp.value;
+          askingPlayer = players[1];
+
+          //if both conditions are found.
+          if(askingCard && askingPlayer){
+            //TODO make it more dynamic for more than one player
+            $("#log").prepend("<p>Player 1 fished Player 2 for "+askingCard+"s.</p>")
+            
+            //try to hook cards from player
+            var hook = fishing(askingPlayer, askingCard);
+            console.log("hook", hook);
+            //if cards are found add to hand
+            if(hook.length != 0){
+              console.log("checking hook length", players[turns].hand);
+              $("#log").prepend("<p>Player 1 got "+hook.length +" "+ askingCard+"(s)!</p>")
+
+
+              //check for matches
+              
+              players[turns].hand = players[turns].hand.concat(hook);
+              //check if hand is empty
+              //draw new hand if so
+              //clear all cards
+              drawClientsHand();
+              drawOthersHand("#player2");
+             
+              //loop again
+            }
+            //else draw and end turn
+            else{
+              $("#log").prepend("<p>Player 1 go fish!</p>")
+              players[turns].add(pool.dealOne());
+              $("#cardsLeft").text(pool.cardsLeft())
+              drawClientsHand();
+
+              turns = (turns++)%players.length;
+              runComputerPlayer(players[1]);
+              //check for matches
+              //check if hand is empty
+              //draw new hand if so
+              //break loop
+              //run computer player?
+            }//end of else
+            askingPlayer = "";
+            askingCard = "";
+          }//end of asking card and asking player
+        }
+
+      })
+
+      //allows player to pick the player
+
+
+    </script>
   </body>
 </html>

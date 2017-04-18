@@ -14,4 +14,4 @@ function Hand(){
 	}
 }
 
-module.exports = Hand;
+// module.exports = Hand;
