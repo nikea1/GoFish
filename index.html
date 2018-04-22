@@ -43,11 +43,13 @@
       <div id="cardTable">
         <!-- others -->
         <h3>Player2</h3>
+        <h3>Points:<span id="P2_points" data-P2 ="0"> 0</span></h3>
         <div id="player2"></div>
 
         <div id="deck"><h3>Number of cards Left:<span id=cardsLeft></span></h3></div>
         <!-- client -->
         <h3>Player1</h3>
+        <h3>Points:<span id="P1_points" data-P1="0"> 0</span></h3>
         <div id="player1"></div>
         
       </div>
@@ -71,21 +73,61 @@
     <script type="text/javascript" src="./js/hand.js"></script>
     <script type="text/javascript" src="./js/gofish.js"></script>
     <script type="text/javascript">
-      var pool = new Deck();
-      pool.initDeck();
-      var players = [];
+      
+      function swap(array,i,j){
+        var temp = array[i];
+        array[i] = array[j];
+        array[j] = temp;
+      }
 
-      players.push(new Hand());
-      players.push(new Hand());
-      var askingCard = "";
-      var askingPlayer = "";
-      var turns = 0;
-      // var turns = Math.floor(Math.round()*players.length);
+      function sortByValue(array){
 
-      initHands(players, pool);
+        console.log("start sort");
+        console.log(array.length);
+        //
+        if(array.length <= 1){
+          console.log("base case 1");
+          console.log(array);
+          return array;
+        }
 
-      //if client num matches player use drawClientHand
-      //else use draw others hand
+        if(array.length == 2){
+          if(array[0] > array[1])
+            swap(array,0,1);
+          console.log("base case 2");
+          console.log(array);
+          return array;
+        }
+        console.log("pass base cases");
+        //pivot is array[0]
+        var pivot = array[0].value;
+        var lp = 1;
+        var rp = array.length-1;
+        console.log("before loop lp:",lp,"rp:",rp, "pivot", pivot);
+        //while pointers are not cross
+        console.log("array before check",array);
+        while(lp <= rp){
+          //if lp value greater than pivot sop
+          console.log("before movement lp:",lp,"rp:",rp);
+          while(lp != array.length-1 && array[lp].vaule < pivot) lp++;
+          while(rp != 0 && array[rp].value >= pivot) rp--;
+          console.log("after movement lp:",lp,"rp:",rp);
+           if(rp > lp){
+            swap(array, rp, lp);
+            console.log(array)
+            rp--;
+            lp++;
+          }
+          else
+            break;
+        }
+        swap(array, 0, rp);
+        var arr1 = array.slice(0, rp);
+        var arr2 = array.slice(rp+1, array.length);
+
+        return sortByValue(arr1).concat(array[rp], sortByValue(arr2));
+      }
+
 
       function drawClientsHand(){
         $("#player1").empty();
@@ -103,12 +145,15 @@
         })
       }
 
+       //runs computer player
       function runComputerPlayer(player){
         var cardVal = Math.floor(Math.random()*player.cardsLeft());
         var askingCard = player.hand[cardVal].value;
         var askingPlayer = players[0]; //TODO: change this when more players introduced
+         
          //if both conditions are found.
           while(askingCard && askingPlayer){
+            //TODO edit test to be more general
             $("#log").prepend("<p>Player 2 fished Player 1 for "+ askingCard +"s.</p>")
 
             //try to hook cards from player
@@ -119,8 +164,11 @@
               $("#log").prepend("<p>Player 2 got "+hook.length +" "+ askingCard+"(s)!</p>")
 
               //check for matches
+              hook = hook.concat(fishing(player, askingCard));
+
               
-              player.hand = player.hand.concat(hook);
+              if(hook.length != 4)
+                player.hand = player.hand.concat(hook);
               //check if hand is empty
               //draw new hand if so
               //clear all cards
@@ -152,11 +200,29 @@
             cardVal = Math.floor(Math.random()*player.cardsLeft());
             askingCard = player.hand[cardVal].value;
           }//end of asking card and asking player
-      }
-
+      }//end of run computer
       
+      //initialize game screen
+      var pool = new Deck();
+      pool.initDeck();
+      pool.deck = sortByValue(pool.deck);
+      console.log(pool.deck);
+      var players = [];
+
+      players.push(new Hand());
+      players.push(new Hand());
+      var askingCard = "";
+      var askingPlayer = "";
+      var turns = 0;
+      // var turns = Math.floor(Math.round()*players.length);
+
+      //deals out hand to all players
+      initHands(players, pool);
+
+      //display out hands on screen
       drawClientsHand();
       drawOthersHand("#player2");
+
       //display number of cards left in deck
       $("#cardsLeft").text(pool.cardsLeft());
 
@@ -168,56 +234,124 @@
       //allows player to pick his cards
       $(document.body).on("click", ".card1", function(){
         if(turns == 0){
+
           //get card value
           var temp = $(this).data("cardkey");
           console.log(temp);
           askingCard = temp.value;
+          //TODO allow for picking other players
           askingPlayer = players[1];
 
           //if both conditions are found.
           if(askingCard && askingPlayer){
             //TODO make it more dynamic for more than one player
-            $("#log").prepend("<p>Player 1 fished Player 2 for "+askingCard+"s.</p>")
+            $("#log").prepend("<p>Player 1 asked Player 2 for "+askingCard+"s.</p>")
             
             //try to hook cards from player
             var hook = fishing(askingPlayer, askingCard);
             console.log("hook", hook);
+            
             //if cards are found add to hand
             if(hook.length != 0){
+            
               console.log("checking hook length", players[turns].hand);
+              //update game log
               $("#log").prepend("<p>Player 1 got "+hook.length +" "+ askingCard+"(s)!</p>")
-
-
-              //check for matches
               
-              players[turns].hand = players[turns].hand.concat(hook);
+              //check for matches
+              var cardsfound = [];
+              var match = hook.length;
+
+              //check all cards in players hand
+              for(var i = 0; i < players[turns].cardsLeft(); i++){
+                if(players[turns].hand[i].value == askingCard){
+                  cardsfound.push(players[turns].discard(i));
+                  i--;
+                  match++;
+                }
+              }
+              //-----------------------------------------------------------------
+              //check for 4 of a kind
+              //if not found add card to hand
+              if(match != 4){
+                hook = cardsfound.concat(hook);
+                for(var i = 0; i < match; i++)
+                  players[turns].add(hook.pop());
+              }
+              //else increase players point
+              else{
+                console.log("Got all 4 ",askingCard);
+                var points = $("#P1_points").data("p1");
+                points = points+1;
+                $("#P1_points").data("p1", points);
+                console.log($("#P1_points").data("p1"));
+                $("#P1_points").html($("#P1_points").data("p1"));
+              }
+              //-----------------------------------------------------------------
               //check if hand is empty
-              //draw new hand if so
-              //clear all cards
-              drawClientsHand();
+              if(players[turns].cardsLeft() == 0){
+                //draw new hand if so
+                drawNewHand(players[turns], 7);
+              }
+              //-----------------------------------------------------------------
               drawOthersHand("#player2");
-             
-              //loop again
-            }
+            }//end of found cards
+            
             //else draw and end turn
             else{
-              $("#log").prepend("<p>Player 1 go fish!</p>")
-              players[turns].add(pool.dealOne());
-              $("#cardsLeft").text(pool.cardsLeft())
-              drawClientsHand();
+              //collect matches
+              match = 1;
+              $("#log").prepend("<p>Player 1 go fish!</p>");
+              var temp = [pool.dealOne()];
+              
+              for(var i = 0; i < players[turns].cardsLeft(); i++){
+                if(temp[0].value == players[turns].hand[i].value){
+                  match++;
+                  temp.push(players[turns].discard(i));
+                  i--;
+                }
 
-              turns = (turns++)%players.length;
-              runComputerPlayer(players[1]);
-              //check for matches
-              //check if hand is empty
-              //draw new hand if so
-              //break loop
-              //run computer player?
-            }//end of else
+              }
+              //------------------------------------------------------------------
+              //do we have 4 matches?
+              if(match == 4){
+                //update score
+                points = $("#P1_points").data("p1");
+                console.log(points);
+                points = points+1;
+                $("#P1_points").data("p1", points);
+                console.log($("#P1_points").data("p1"));
+                $("#P1_points").html($("#P1_points").data("p1"));
+              }
+              else{
+                //put cards back
+                for(var i = 0; i < match; i++)
+                  players[turns].add(temp.pop());
+              }
+
+            }//end of end turn else
+             
+           
+
+            if(players[turns].cardsLeft() == 0){
+
+              drawNewHand(players[turns], 7)
+            }
+
+            $("#cardsLeft").text(pool.cardsLeft());
+            
+
+            //turns = (turns++)%players.length;
+            //runComputerPlayer(players[1]);
+              
             askingPlayer = "";
-            askingCard = "";
-          }//end of asking card and asking player
-        }
+            askingCard = "";              
+              //run computer player?
+            //}//end of else
+            
+            drawClientsHand();
+          }//end of asking card and asking player check
+        }//end of players turn check
 
       })
 
